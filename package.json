@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "cd AI-Video-Generator-Store/artifacts/api-server && npm install && node ./build.mjs",
-    "start": "cd AI-Video-Generator-Store/artifacts/api-server && node --enable-source-maps ./dist/index.mjs"
+    "start": "node --enable-source-maps ./AI-Video-Generator-Store/artifacts/api-server/dist/pino-file.mjs"
   },
   "dependencies": {}
 }
