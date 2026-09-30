@@ -1,9 +1,10 @@
 {
-  "name": "clicpai-generate",
+  "name": "clicpai-monorepo-root",
   "version": "1.0.0",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "start": "node index.js"
+    "build": "cd AI-Video-Generator-Store/artifacts/api-server && npm install && node ./build.mjs",
+    "start": "cd AI-Video-Generator-Store/artifacts/api-server && node --enable-source-maps ./dist/index.mjs"
   },
   "dependencies": {}
 }
