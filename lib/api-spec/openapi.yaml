@@ -1,0 +1,762 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: video
+    description: AI video generation operations
+  - name: billing
+    description: Credit balance and checkout operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /models:
+    get:
+      operationId: listVideoModels
+      tags: [video]
+      summary: List available video models
+      description: Returns curated video models supported by the app.
+      responses:
+        "200":
+          description: Available video models
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VideoModel"
+  /billing/account:
+    get:
+      operationId: getBillingAccount
+      tags: [billing]
+      summary: Get the signed-in user's credit balance
+      responses:
+        "200":
+          description: Current credit balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingAccount"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /billing/plans:
+    get:
+      operationId: getBillingPlans
+      tags: [billing]
+      summary: Get current pay-as-you-go prices
+      description: Returns authoritative per-second prices and example totals used by checkout.
+      responses:
+        "200":
+          description: Current video pricing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingPlans"
+  /billing/checkout:
+    post:
+      operationId: createBillingCheckout
+      tags: [billing]
+      summary: Start a one-time credit purchase
+      description: Creates a Stripe Checkout Session for the selected currency and payment method.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BillingCheckoutInput"
+      responses:
+        "200":
+          description: Stripe Checkout URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingCheckoutResponse"
+        "400":
+          description: Invalid purchase details or unsupported payment method for the currency
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Signed-in account is missing a primary email address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Stripe could not create the Checkout Session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /uploads/images:
+    post:
+      operationId: createImageUpload
+      tags: [video]
+      summary: Create a private reference-image upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImageUploadInput"
+      responses:
+        "200":
+          description: Short-lived direct upload details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImageUpload"
+        "400":
+          description: Invalid image metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /uploads/voices:
+    post:
+      operationId: createVoiceUpload
+      tags: [video]
+      summary: Create a private upload for a customer voice recording
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoiceUploadInput"
+      responses:
+        "200":
+          description: Short-lived direct upload details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoiceUpload"
+        "400":
+          description: Invalid recording metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /predictions:
+    get:
+      operationId: listPredictions
+      tags: [video]
+      summary: List recent predictions
+      responses:
+        "200":
+          description: Recent video generations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Prediction"
+    post:
+      operationId: createPrediction
+      tags: [video]
+      summary: Start a video generation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PredictionInput"
+      responses:
+        "201":
+          description: Prediction started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prediction"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Video provider request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "424":
+          description: Selected video model is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "402":
+          description: Not enough credits
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /predictions/{id}:
+    get:
+      operationId: getPrediction
+      tags: [video]
+      summary: Get a prediction status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Prediction status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prediction"
+        "404":
+          description: Prediction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /predictions/{id}/voice-retry:
+    post:
+      operationId: retryPredictionVoice
+      tags: [video]
+      summary: Retry failed voice processing for a completed video
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "202":
+          description: Voice processing queued again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prediction"
+        "409":
+          description: Voice is not in a retryable state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Prediction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /predictions/{id}/sound:
+    post:
+      operationId: createSoundVideo
+      tags: [video]
+      summary: Generate a short music or sound-effects track and download the video
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SoundPromptInput"
+      responses:
+        "200":
+          description: MP4 video with generated sound
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Invalid prompt or video not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Prediction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Sound generation or video processing failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "504":
+          description: Sound generation timed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /predictions/{id}/sound-upload:
+    post:
+      operationId: uploadSoundVideo
+      tags: [video]
+      summary: Add a user-owned audio track and download the video
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "200":
+          description: MP4 video with uploaded sound
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Invalid audio file or video not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Prediction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "413":
+          description: Audio file too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Video processing failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /predictions/{id}/download:
+    get:
+      operationId: downloadVideo
+      tags: [video]
+      summary: Download the completed video with its selected voice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: MP4 video
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description: Video is not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Selected voice is not finished yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Prediction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Video download failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /predictions/{id}/video:
+    get:
+      operationId: streamVideo
+      tags: [video]
+      summary: Stream a completed video from persistent private storage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: MP4 video
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        "206":
+          description: Partial MP4 content
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+        "409":
+          description: Selected voice is not finished yet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Prediction not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "410":
+          description: Video is no longer recoverable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    BillingCheckoutInput:
+      type: object
+      required: [email, durationSeconds, currency]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          description: Payer email sent to Stripe Checkout; credits remain assigned to the authenticated account.
+        durationSeconds:
+          type: integer
+          minimum: 10
+          maximum: 180
+        currency:
+          type: string
+          enum: [usd, thb]
+        paymentMethod:
+          type: string
+          enum: [card, promptpay]
+          default: card
+    BillingCheckoutResponse:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+    BillingAccount:
+      type: object
+      required: [creditsRemaining, generationsUsed]
+      properties:
+        creditsRemaining:
+          type: integer
+        generationsUsed:
+          type: integer
+    BillingPlans:
+      type: object
+      required: [mode, rates, examples]
+      properties:
+        mode:
+          type: string
+          enum: [live_pay_as_you_go]
+        rates:
+          type: object
+          required: [usdPerSecond, thbPerSecond]
+          properties:
+            usdPerSecond:
+              type: number
+            thbPerSecond:
+              type: number
+        examples:
+          type: array
+          items:
+            type: object
+            required: [seconds, usdCents, thbSatang]
+            properties:
+              seconds:
+                type: integer
+              usdCents:
+                type: integer
+              thbSatang:
+                type: integer
+    VideoModel:
+      type: object
+      required: [id, name, provider, description, creditCosts, lipSyncCreditCosts, duration, image]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        description:
+          type: string
+        creditCosts:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 1
+        lipSyncCreditCosts:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 1
+          description: Total credits required for videos with lip-sync, keyed by duration in seconds.
+        duration:
+          type: string
+        image:
+          type: string
+    PredictionInput:
+      type: object
+      required: [prompt, modelId, aspectRatio, duration]
+      properties:
+        prompt:
+          type: string
+          minLength: 3
+        modelId:
+          type: string
+        aspectRatio:
+          type: string
+          enum: [16:9, 9:16, 1:1]
+        duration:
+          type: integer
+          enum: [5, 6, 10]
+        expectedCreditCost:
+          type: integer
+          minimum: 1
+          description: Optional maximum credit cost approved by the customer. If the current cost differs, do not start a prediction.
+        negativePrompt:
+          type: ["string", "null"]
+        imageUploadId:
+          type: ["string", "null"]
+          format: uuid
+        imagePurpose:
+          type: ["string", "null"]
+          enum: [product, avatar, null]
+        lipSyncEnabled:
+          type: boolean
+          default: false
+          description: Apply lip-sync to an uploaded person/avatar image with narration.
+        voiceMode:
+          type: string
+          enum: [none, text, upload]
+        voiceStyle:
+          type: string
+          enum: [male, female, child]
+          default: male
+          description: Voice style for AI-generated narration; ignored for uploaded recordings or no voice.
+        voiceText:
+          type: ["string", "null"]
+          maxLength: 1200
+        voiceUploadId:
+          type: ["string", "null"]
+          format: uuid
+    SoundPromptInput:
+      type: object
+      required: [prompt, kind]
+      properties:
+        prompt:
+          type: string
+          minLength: 3
+          maxLength: 1000
+        kind:
+          type: string
+          enum: [music, effects]
+    ImageUploadInput:
+      type: object
+      required: [contentType, size]
+      properties:
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        size:
+          type: integer
+          minimum: 1
+          maximum: 10485760
+    ImageUpload:
+      type: object
+      required: [uploadId, uploadUrl, contentType]
+      properties:
+        uploadId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
+          format: uri
+        contentType:
+          type: string
+    VoiceUploadInput:
+      type: object
+      required: [contentType, size]
+      properties:
+        contentType:
+          type: string
+          enum: [audio/mpeg, audio/mp3, audio/wav, audio/x-wav, audio/mp4, audio/x-m4a, audio/aac, audio/ogg, audio/webm, audio/flac, audio/x-flac]
+        size:
+          type: integer
+          minimum: 1
+          maximum: 20971520
+    VoiceUpload:
+      type: object
+      required: [uploadId, uploadUrl, contentType]
+      properties:
+        uploadId:
+          type: string
+          format: uuid
+        uploadUrl:
+          type: string
+          format: uri
+        contentType:
+          type: string
+    Prediction:
+      type: object
+      required:
+        [id, status, prompt, modelId, modelName, aspectRatio, duration, outputUrl, error, createdAt, progress, lipSyncEnabled, voiceMode, voiceStyle, voiceStatus, creditsRefunded, refundedCredits, refundPending]
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum: [starting, processing, succeeded, failed, canceled]
+        prompt:
+          type: string
+        modelId:
+          type: string
+        modelName:
+          type: string
+        aspectRatio:
+          type: string
+        duration:
+          type: integer
+        outputUrl:
+          type: ["string", "null"]
+        error:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        progress:
+          type: integer
+        lipSyncEnabled:
+          type: boolean
+        thumbnail:
+          type: ["string", "null"]
+        voiceMode:
+          type: string
+          enum: [none, text, upload]
+        voiceStyle:
+          type: string
+          enum: [male, female, child]
+        voiceStatus:
+          type: string
+          enum: [none, pending, processing, succeeded, failed]
+        creditsRefunded:
+          type: boolean
+        refundedCredits:
+          type: integer
+          minimum: 0
+        refundPending:
+          type: boolean
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

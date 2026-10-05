@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Video AI Store"
+description = "A free-mode simulated AI video dashboard with prompt-based demo generation, local preview playback, generation history, and pay-as-you-go pricing previews."
+version = "1.0.0"
+id = "artifacts/video-ai-store"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25080
+
+[services.development]
+run = "pnpm --filter @workspace/video-ai-store run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/video-ai-store", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/video-ai-store/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25080"
+BASE_PATH = "/"

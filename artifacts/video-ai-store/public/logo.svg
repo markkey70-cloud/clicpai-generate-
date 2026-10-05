@@ -1,0 +1,8 @@
+<svg width="180" height="48" viewBox="0 0 180 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="48" height="48" rx="13" fill="#182033"/>
+  <path d="M13 19H35V33C35 35.2091 33.2091 37 31 37H17C14.7909 37 13 35.2091 13 33V19Z" stroke="#F7F4EE" stroke-width="2.5"/>
+  <path d="M15 12L34 9L36 16L17 19L15 12Z" stroke="#F7F4EE" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M20 11L24 17M28 10L32 15" stroke="#F7F4EE" stroke-width="2"/>
+  <circle cx="31.5" cy="31.5" r="2.5" fill="#C9C0FF"/>
+  <text x="59" y="31" fill="#182033" font-family="Arial, sans-serif" font-size="22" font-weight="700">clicpai.com</text>
+</svg>
